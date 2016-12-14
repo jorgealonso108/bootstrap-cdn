@@ -31,7 +31,7 @@
     "forever": "^0.15.2",
     "format": "^0.2.2",
     "fs-walk": "^0.0.1",
-    "html-validator": "^2.0.3",
+    "html-validator-cli": "^3.1.1",
     "htmlencode": "^0.0.4",
     "mocha": "^3.1.2",
     "pug-lint": "^2.3.0",

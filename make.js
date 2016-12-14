@@ -13,6 +13,7 @@ const ESLINT     = path.join(__dirname, 'node_modules/.bin/eslint');
 const BOOTLINT   = path.join(__dirname, 'node_modules/.bin/bootlint');
 const PUGLINT    = path.join(__dirname, 'node_modules/.bin/pug-lint');
 const FOREVER    = path.join(__dirname, 'node_modules/.bin/forever');
+const HTMLLINT   = path.join(__dirname, 'node_modules/.bin/html-validator');
 
 const MOCHA_OPTS = ' --timeout 15000 --slow 500';
 
@@ -51,6 +52,7 @@ target.lint = () => {
     target.eslint();
     target.puglint();
     target.bootlint();
+    target.htmllint();
 };
 
 target.functional = () => {
@@ -175,6 +177,69 @@ target.bootlint = () => {
     }, 2000);
 };
 
+target.htmllint = () => {
+    echo('+ node make start');
+    const port = 3081;
+
+    env.PORT = port;
+    env.NODE_ENV = 'development';
+    target.start();
+
+    const pages = [
+        '',
+        'fontawesome',
+        'bootswatch',
+        'bootlint',
+        'legacy',
+        'showcase',
+        'integrations'
+    ];
+
+    let output = '';
+
+    // sleep
+    setTimeout(() => {
+        echo('------------------------------------------------');
+        async.eachSeries(pages, (page, callback) => {
+            const url = `http://localhost:${port}/${page}${page === '' ? '' : '/'}`;
+
+            if (page !== '') {
+                page += '_';
+            }
+
+            output = path.join(__dirname, `${page}lint.html`);
+            const file = fs.createWriteStream(output);
+
+            // okay, not really curl, but it communicates
+            echo(`+ curl ${url} > ${output}`);
+
+            http.get(url, (response) => {
+                response.pipe(file);
+                response.on('end', () => {
+                    file.close();
+                    callback();
+                });
+            });
+        }, () => {
+            echo('+ node make tryStop');
+            target.tryStop();
+
+            echo(`+ html-validator --verbose --file=${output}`);
+
+            const lint = exec(`${HTMLLINT} --verbose --format=text --file=${output}`, {
+                async: true,
+                silent: true
+            });
+
+            lint.stdout.on('data', (data) => {
+                console.log(data);
+                rm(output);
+            });
+
+        });
+    }, 2000);
+};
+
 target.all = () => {
     target.test();
     target.run();
@@ -192,6 +257,7 @@ target.help = () => {
     echo('  eslint      run eslint');
     echo('  bootlint    run Bootlint');
     echo('  puglint     run pug-lint');
+    echo('  htmllint    run HTML validator');
     echo('  travis      run Travis CI checks');
     echo('  appveyor    run AppVeyor CI checks');
     echo('  help        shows this help message');
