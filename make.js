@@ -135,46 +135,43 @@ target.bootlint = () => {
 
     const outputs = [];
 
-    // sleep
-    setTimeout(() => {
-        echo('------------------------------------------------');
-        async.eachSeries(pages, (page, callback) => {
-            const url = `http://localhost:${port}/${page}${page === '' ? '' : '/'}`;
+    echo('------------------------------------------------');
+    async.eachSeries(pages, (page, callback) => {
+        const url = `http://localhost:${port}/${page}${page === '' ? '' : '/'}`;
 
-            if (page !== '') {
-                page += '_';
-            }
+        if (page !== '') {
+            page += '_';
+        }
 
-            const output = path.join(__dirname, `${page}lint.html`);
-            const file = fs.createWriteStream(output);
+        const output = path.join(__dirname, `${page}lint.html`);
+        const file = fs.createWriteStream(output);
 
-            // okay, not really curl, but it communicates
-            echo(`+ curl ${url} > ${output}`);
+        // okay, not really curl, but it communicates
+        echo(`+ curl ${url} > ${output}`);
 
-            http.get(url, (response) => {
-                response.pipe(file);
+        http.get(url, (response) => {
+            response.pipe(file);
 
-                response.on('end', () => {
-                    file.close();
-                    outputs.push(output);
-                    callback();
-                });
-            });
-        }, () => {
-            echo('+ node make tryStop');
-            target.tryStop();
-
-            echo(`+ bootlint ${outputs.join('\\\n\t')}`);
-
-            // disabling latest version error
-            exec(`${BOOTLINT} -d W013 ${outputs.join(' ')}`, (code) => {
-                rm(outputs);
-                if (code !== 0) {
-                    process.exit(code);
-                }
+            response.on('end', () => {
+                file.close();
+                outputs.push(output);
+                callback();
             });
         });
-    }, 2000);
+    }, () => {
+        echo('+ node make tryStop');
+        target.tryStop();
+
+        echo(`+ bootlint ${outputs.join('\\\n\t')}`);
+
+        // disabling latest version error
+        exec(`${BOOTLINT} -d W013 ${outputs.join(' ')}`, (code) => {
+            rm(outputs);
+            if (code !== 0) {
+                process.exit(code);
+            }
+        });
+    });
 };
 
 target.htmllint = () => {
@@ -197,47 +194,45 @@ target.htmllint = () => {
 
     let output = '';
 
-    // sleep
-    setTimeout(() => {
-        echo('------------------------------------------------');
-        async.eachSeries(pages, (page, callback) => {
-            const url = `http://localhost:${port}/${page}${page === '' ? '' : '/'}`;
 
-            if (page !== '') {
-                page += '_';
-            }
+    echo('------------------------------------------------');
+    async.eachSeries(pages, (page, callback) => {
+        const url = `http://localhost:${port}/${page}${page === '' ? '' : '/'}`;
 
-            output = path.join(__dirname, `${page}lint.html`);
-            const file = fs.createWriteStream(output);
+        if (page !== '') {
+            page += '_';
+        }
 
-            // okay, not really curl, but it communicates
-            echo(`+ curl ${url} > ${output}`);
+        output = path.join(__dirname, `${page}lint.html`);
+        const file = fs.createWriteStream(output);
 
-            http.get(url, (response) => {
-                response.pipe(file);
-                response.on('end', () => {
-                    file.close();
-                    callback();
-                });
+        // okay, not really curl, but it communicates
+        echo(`+ curl ${url} > ${output}`);
+
+        http.get(url, (response) => {
+            response.pipe(file);
+            response.on('end', () => {
+                file.close();
+                callback();
             });
-        }, () => {
-            echo('+ node make tryStop');
-            target.tryStop();
-
-            echo(`+ html-validator --verbose --file=${output}`);
-
-            const lint = exec(`${HTMLLINT} --verbose --format=text --file=${output}`, {
-                async: true,
-                silent: true
-            });
-
-            lint.stdout.on('data', (data) => {
-                console.log(data);
-                rm(output);
-            });
-
         });
-    }, 2000);
+    }, () => {
+        echo('+ node make tryStop');
+        target.tryStop();
+
+        echo(`+ html-validator --verbose --file=${output}`);
+
+        const lint = exec(`${HTMLLINT} --verbose --format=text --file=${output}`, {
+            async: true,
+            silent: true
+        });
+
+        lint.stdout.on('data', (data) => {
+            console.log(data);
+            rm(output);
+        });
+
+    });
 };
 
 target.all = () => {
