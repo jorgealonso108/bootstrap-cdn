@@ -196,7 +196,7 @@ target.htmllint = () => {
 
 
     echo('------------------------------------------------');
-    async.eachSeries(pages, (page, callback) => {
+    async.each(pages, (page, callback) => {
         const url = `http://localhost:${port}/${page}${page === '' ? '' : '/'}`;
 
         if (page !== '') {
@@ -215,8 +215,15 @@ target.htmllint = () => {
                 file.close();
                 callback();
             });
+        })
+        .on('error', (e) => {
+            console.error(`Got error: ${e.message}`);
         });
-    }, () => {
+    }, (err) => {
+        if (err) {
+            console.error(`Got error: ${err.message}`);
+        }
+
         echo('+ node make tryStop');
         target.tryStop();
 
@@ -224,7 +231,7 @@ target.htmllint = () => {
 
         const lint = exec(`${HTMLLINT} --verbose --format=text --file=${output}`, {
             async: true,
-            silent: true
+            silent: false
         });
 
         lint.stdout.on('data', (data) => {
